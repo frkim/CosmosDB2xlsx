@@ -39,23 +39,32 @@ class Program
         };
         databaseOption.AddAlias("-d");
 
+        var columnsOption = new Option<string[]>(
+            name: "--columns",
+            description: "List of column names (properties) to export (default: all properties)")
+        {
+            AllowMultipleArgumentsPerToken = true
+        };
+        columnsOption.AddAlias("-p");
+
         var rootCommand = new RootCommand("Export data from Cosmos DB to XLSX files")
         {
             connectionStringOption,
             databaseOption,
             containersOption,
-            outputDirOption
+            outputDirOption,
+            columnsOption
         };
 
-        rootCommand.SetHandler(async (connectionString, database, containers, outputDir) =>
+        rootCommand.SetHandler(async (connectionString, database, containers, outputDir, columns) =>
         {
-            await ExportCosmosDbToXlsx(connectionString, database, containers, outputDir);
-        }, connectionStringOption, databaseOption, containersOption, outputDirOption);
+            await ExportCosmosDbToXlsx(connectionString, database, containers, outputDir, columns);
+        }, connectionStringOption, databaseOption, containersOption, outputDirOption, columnsOption);
 
         return await rootCommand.InvokeAsync(args);
     }
 
-    static async Task ExportCosmosDbToXlsx(string connectionString, string databaseName, string[]? containerNames, string outputDir)
+    static async Task ExportCosmosDbToXlsx(string connectionString, string databaseName, string[]? containerNames, string outputDir, string[]? columnNames)
     {
         try
         {
@@ -96,7 +105,7 @@ class Program
             {
                 try
                 {
-                    await ExportContainer(database, containerName, outputDir);
+                    await ExportContainer(database, containerName, outputDir, columnNames);
                 }
                 catch (Exception ex)
                 {
@@ -113,7 +122,7 @@ class Program
         }
     }
 
-    static async Task ExportContainer(Database database, string containerName, string outputDir)
+    static async Task ExportContainer(Database database, string containerName, string outputDir, string[]? columnNames)
     {
         Console.WriteLine($"\nExporting container: {containerName}");
         
@@ -147,17 +156,27 @@ class Program
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add(containerName);
 
-        // Extract all unique property names from all items
-        var allProperties = new HashSet<string>();
-        foreach (var item in items)
+        // Determine which properties to export
+        List<string> propertyList;
+        if (columnNames != null && columnNames.Length > 0)
         {
-            foreach (var key in item.Keys)
-            {
-                allProperties.Add(key);
-            }
+            // Use specified columns
+            propertyList = columnNames.ToList();
+            Console.WriteLine($"  Exporting specified columns: {string.Join(", ", propertyList)}");
         }
-
-        var propertyList = allProperties.OrderBy(p => p).ToList();
+        else
+        {
+            // Extract all unique property names from all items
+            var allProperties = new HashSet<string>();
+            foreach (var item in items)
+            {
+                foreach (var key in item.Keys)
+                {
+                    allProperties.Add(key);
+                }
+            }
+            propertyList = allProperties.OrderBy(p => p).ToList();
+        }
         
         // Write headers
         for (int i = 0; i < propertyList.Count; i++)

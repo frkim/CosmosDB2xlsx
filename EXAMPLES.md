@@ -62,6 +62,30 @@ dotnet run --project CosmosDB2xlsx/CosmosDB2xlsx.csproj -- \
   -o "./exports"
 ```
 
+### Example 5: Export Specific Columns
+
+Export only specific properties/columns from documents:
+
+```bash
+dotnet run --project CosmosDB2xlsx/CosmosDB2xlsx.csproj -- \
+  -c "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key==" \
+  -d "MyDatabase" \
+  -p "id" "name" "email" "createdAt"
+```
+
+### Example 6: Combine Container and Column Filtering
+
+Export specific columns from specific containers:
+
+```bash
+dotnet run --project CosmosDB2xlsx/CosmosDB2xlsx.csproj -- \
+  -c "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key==" \
+  -d "MyDatabase" \
+  -t "Users" "Orders" \
+  -p "id" "timestamp" "status" "total" \
+  -o "./exports"
+```
+
 ## Using Environment Variables
 
 For better security, you can store the connection string in an environment variable:
@@ -146,6 +170,32 @@ foreach ($db in $Databases) {
 }
 ```
 
+### PowerShell Script with Column Filtering
+
+```powershell
+$ConnectionString = "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key=="
+$Database = "MyDatabase"
+$Containers = @("Users", "Orders", "Products")
+$OutputBase = ".\exports"
+
+# Export different columns for different containers
+$ContainerColumns = @{
+    "Users" = @("id", "username", "email", "createdAt")
+    "Orders" = @("id", "userId", "total", "status", "orderDate")
+    "Products" = @("id", "name", "price", "category")
+}
+
+foreach ($container in $Containers) {
+    Write-Host "Exporting container: $container"
+    .\CosmosDB2xlsx.exe `
+        -c $ConnectionString `
+        -d $Database `
+        -t $container `
+        -p $ContainerColumns[$container] `
+        -o $OutputBase
+}
+```
+
 ## Output Format
 
 The tool creates one XLSX file per container with the following characteristics:
@@ -184,5 +234,6 @@ For very large datasets:
 
 1. **Export during off-peak hours** to minimize impact on production workloads
 2. **Use specific containers** instead of exporting all to reduce time and resources
-3. **Consider partitioning** exports by date ranges if you have time-series data
-4. **Increase RU/s temporarily** if you need faster exports and can afford the cost
+3. **Use column filtering** (`--columns` or `-p`) to export only needed properties, reducing file size and processing time
+4. **Consider partitioning** exports by date ranges if you have time-series data
+5. **Increase RU/s temporarily** if you need faster exports and can afford the cost
