@@ -20,8 +20,32 @@ A .NET command-line tool to export data from Azure Cosmos DB to Excel (XLSX) fil
 
 ```bash
 git clone https://github.com/frkim/CosmosDB2xlsx.git
-cd CosmosDB2xlsx/CosmosDB2xlsx
+cd CosmosDB2xlsx
 dotnet build
+```
+
+### Publish as Standalone Executable
+
+To create standalone executables for different platforms:
+
+```bash
+# Windows x64
+dotnet publish CosmosDB2xlsx/CosmosDB2xlsx.csproj -c Release -r win-x64 -o ./publish/win-x64
+
+# Linux x64
+dotnet publish CosmosDB2xlsx/CosmosDB2xlsx.csproj -c Release -r linux-x64 -o ./publish/linux-x64
+
+# macOS x64
+dotnet publish CosmosDB2xlsx/CosmosDB2xlsx.csproj -c Release -r osx-x64 -o ./publish/osx-x64
+
+# macOS ARM64
+dotnet publish CosmosDB2xlsx/CosmosDB2xlsx.csproj -c Release -r osx-arm64 -o ./publish/osx-arm64
+```
+
+Or use the provided script:
+
+```bash
+./publish.sh
 ```
 
 ## Usage
