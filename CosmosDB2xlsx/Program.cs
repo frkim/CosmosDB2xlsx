@@ -119,18 +119,21 @@ class Program
         
         var container = database.GetContainer(containerName);
         
-        // Query all items in the container
+        // Query all items in the container using a custom class approach
         var query = new QueryDefinition("SELECT * FROM c");
-        using var iterator = container.GetItemQueryIterator<JsonDocument>(query);
+        using var iterator = container.GetItemQueryIterator<Dictionary<string, object>>(query);
         
-        var items = new List<JsonDocument>();
+        var items = new List<Dictionary<string, object>>();
         while (iterator.HasMoreResults)
         {
             var response = await iterator.ReadNextAsync();
-            items.AddRange(response);
+            foreach (var item in response)
+            {
+                items.Add(item);
+            }
             Console.WriteLine($"  Retrieved {items.Count} items so far...");
         }
-
+        
         if (items.Count == 0)
         {
             Console.WriteLine($"  Container '{containerName}' is empty. Skipping.");
@@ -148,10 +151,9 @@ class Program
         var allProperties = new HashSet<string>();
         foreach (var item in items)
         {
-            var jsonElement = item.RootElement;
-            foreach (var property in jsonElement.EnumerateObject())
+            foreach (var key in item.Keys)
             {
-                allProperties.Add(property.Name);
+                allProperties.Add(key);
             }
         }
 
@@ -168,14 +170,12 @@ class Program
         int row = 2;
         foreach (var item in items)
         {
-            var jsonElement = item.RootElement;
-            
             for (int col = 0; col < propertyList.Count; col++)
             {
                 var propertyName = propertyList[col];
-                if (jsonElement.TryGetProperty(propertyName, out var propertyValue))
+                if (item.TryGetValue(propertyName, out var propertyValue))
                 {
-                    var cellValue = GetCellValue(propertyValue);
+                    var cellValue = GetCellValueFromObject(propertyValue);
                     worksheet.Cell(row, col + 1).Value = cellValue;
                 }
             }
@@ -212,5 +212,35 @@ class Program
             default:
                 return element.ToString();
         }
+    }
+
+    static string GetCellValueFromObject(object? value)
+    {
+        if (value == null)
+            return "";
+        
+        if (value is string str)
+            return str;
+        
+        if (value is bool boolean)
+            return boolean.ToString().ToLower();
+        
+        if (value is JsonElement jsonElement)
+            return GetCellValue(jsonElement);
+        
+        // For complex objects, arrays, etc., serialize to JSON
+        if (value.GetType().IsClass && value is not string)
+        {
+            try
+            {
+                return JsonSerializer.Serialize(value);
+            }
+            catch
+            {
+                return value.ToString() ?? "";
+            }
+        }
+        
+        return value.ToString() ?? "";
     }
 }
