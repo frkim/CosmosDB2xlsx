@@ -63,6 +63,7 @@ dotnet run -- --connection-string "<your-connection-string>" --database "<databa
 | `--connection-string` | `-c` | Cosmos DB connection string | Yes |
 | `--database` | `-d` | Database name | Yes |
 | `--containers` | `-t` | List of container names to export (space-separated) | No |
+| `--columns` | `-p` | List of column names (properties) to export (space-separated) | No (default: all properties) |
 | `--output` | `-o` | Output directory for XLSX files | No (default: current directory) |
 | `--help` | `-h` | Show help information | No |
 
@@ -84,6 +85,18 @@ dotnet run -- -c "AccountEndpoint=https://your-account.documents.azure.com:443/;
 
 ```bash
 dotnet run -- -c "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key==" -d "MyDatabase" -o "./exports"
+```
+
+#### Export specific columns only
+
+```bash
+dotnet run -- -c "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key==" -d "MyDatabase" -p "id" "name" "timestamp" "status"
+```
+
+#### Export specific containers with specific columns
+
+```bash
+dotnet run -- -c "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key==" -d "MyDatabase" -t "Users" "Orders" -p "id" "createdAt" "updatedAt"
 ```
 
 ## Output
